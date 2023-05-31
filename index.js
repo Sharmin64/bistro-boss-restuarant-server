@@ -1,6 +1,7 @@
 const express = require("express");
 const app = express();
 const cors = require("cors");
+const jwt = require("jsonwebtoken");
 const {MongoClient, ServerApiVersion, ObjectId} = require("mongodb");
 require("dotenv").config();
 const port = process.env.PORT || 5001;
@@ -47,6 +48,18 @@ async function run() {
       res.send(result);
     });
 
+    //? update users by admin
+    app.patch("/users/admin/:id", async (req, res) => {
+      const id = req.params.id;
+      const filter = {_id: new ObjectId(id)};
+      const updateDoc = {
+        $set: {
+          role: `admin`,
+        },
+      };
+      const result = await usersCollection.updateOne(filter, updateDoc);
+      res.send(result);
+    });
     //?menu related apis
     app.get("/menu", async (req, res) => {
       const result = await menuCollection.find().toArray();
