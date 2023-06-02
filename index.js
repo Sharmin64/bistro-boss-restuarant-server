@@ -18,6 +18,7 @@ const verifyJWT = (req, res, next) => {
 
   //?bearer token
   const token = authorization.split("")[1];
+//?split er por e1 kano disilam mone ney
 
   jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
     if (err) {
@@ -59,9 +60,26 @@ async function run() {
       res.send({token});
     });
 
+    //!Warning: use verifyJWT before using verifyAdmin
+    const verifyAdmin = async (req, res, next) => {
+      const email = req.decoded.email;
+      const query = {email: email};
+      const user = await usersCollection.findOne(query);
+      if (user?.role !== "admin") {
+        return res
+          .status(403)
+          .send({error: true, message: "forbidden message"});
+      }
+      next();
+    };
+
+    //?1.....use  jwt token : verifyToken
+    //?2..do not show secure links to those who should not see the links
+    //? 3 .use verifyAdmin middleware
+
     //?users related apis   >>>user create korar jonno ey code app.post kora hoyese
 
-    app.get("/users", async (req, res) => {
+    app.get("/users", verifyJWT, verifyAdmin, async (req, res) => {
       const result = await usersCollection.find().toArray();
       res.send(result);
     });
@@ -74,6 +92,21 @@ async function run() {
         return res.send({message: "user already exist"});
       }
       const result = await usersCollection.insertOne(user);
+      res.send(result);
+    });
+
+    //?get admin email with security layer: verifyJWT
+    //?email same
+    //?check admin
+    app.get("/users/admin/:email", verifyJWT, async (req, res) => {
+      const email = req.params.email;
+
+      if (req.decoded.email !== email) {
+        res.send({admin: false});
+      }
+      const query = {email: email};
+      const user = await usersCollection.findOne(query);
+      const result = {admin: user?.role === "admin"};
       res.send(result);
     });
 
@@ -94,6 +127,12 @@ async function run() {
       const result = await menuCollection.find().toArray();
       res.send(result);
     });
+
+    app.post('/menu',async(req,res)=>{
+      const newItem= req.body;
+      const result = await menuCollection.insertOne(newItem)
+      res.send(result)
+    })
 
     //?review related api
     app.get("/reviews", async (req, res) => {
