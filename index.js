@@ -18,7 +18,7 @@ const verifyJWT = (req, res, next) => {
 
   //?bearer token
   const token = authorization.split("")[1];
-//?split er por e1 kano disilam mone ney
+  //?split er por e1 kano disilam mone ney
 
   jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
     if (err) {
@@ -26,7 +26,7 @@ const verifyJWT = (req, res, next) => {
         .status(401)
         .send({error: true, message: "unauthorized access"});
     }
-    req.decoded = decoded;
+    req.decoded = decoded; //?decoded holo userer information jeta amra jwt token toiri korar somoy disilam jake onek khetre payload boli . Payload holo j data ami raksi seta k bujhay
     next();
   });
 };
@@ -128,11 +128,19 @@ async function run() {
       res.send(result);
     });
 
-    app.post('/menu',async(req,res)=>{
-      const newItem= req.body;
-      const result = await menuCollection.insertOne(newItem)
-      res.send(result)
-    })
+    app.post("/menu", verifyJWT, verifyAdmin, async (req, res) => {
+      const newItem = req.body;
+      const result = await menuCollection.insertOne(newItem);
+      res.send(result);
+    });
+
+    //?delete operation | delete korte gele admin hote hobe ty eta jwt verify korte hobe
+    app.delete("/menu/:id", verifyJWT, verifyAdmin, async (req, res) => {
+      const id = req.params.id;
+      const query = {_id: new ObjectId(id)};
+      const result = await menuCollection.deleteOne(query);
+      res.send(result);
+    });
 
     //?review related api
     app.get("/reviews", async (req, res) => {
